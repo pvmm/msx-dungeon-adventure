@@ -40,7 +40,7 @@ SECTION code_user
 
 _boot_logo:
 BOOT_LOGO:
-    ; set screen mode
+    ; Set screen mode
     call    INIT32
     call    SETGRP
 
@@ -50,55 +50,55 @@ BOOT_LOGO:
     ld      (BDRCLR), a
     call    CHGCLR
 
-    ; clear color table
+    ; Clear color table
     xor     a
     ld      hl, 0x2000
     ld      bc, 0x1800
     call    FILVRM
 
-    ; clear pattern generate table
+    ; Clear pattern generate table
     xor     a
     ld      hl, 0x0000
     ld      bc, 0x1800
     call    FILVRM
 
-    ; clear pattern name table
+    ; Clear pattern name table
     xor     a
     ld      hl, 0x1800
     ld      bc, 0x0300
     call    FILVRM
 
-    ; clear sprite
+    ; Clear sprite
     call    CLRSPR
 
-    ; set sprite mode
+    ; Set sprite mode
     di
     ld      a, (WRVDP)
     inc     a
-    ld      c, a                    ; set control register#1(vdp write) port
+    ld      c, a                    ; Set control register#1(vdp write) port
     ld      a, 0b01100011           ; SI=1(16x16), MAG=1(double size)
     nop
     out     (c), a
     nop
-    ld      a, 0b10000001           ; mode register #1
+    ld      a, 0b10000001           ; Mode register #1
     nop
     out     (c), a
     nop
     ei
 
-    ; set sprtite pattern
-    ld      hl, SPRITE_PATTERN      ; source address(ram)
-    ld      de, 0x3800              ; dist address(vram)
-    ld      bc, 384                 ; data length
+    ; Set sprite pattern
+    ld      hl, SPRITE_PATTERN      ; Source address (RAM)
+    ld      de, 0x3800              ; Destination address (VRAM)
+    ld      bc, 384                 ; Data length
     call    LDIRVM
 
-    ; set sprite attribute tablle
-    ld      hl, 0x1b00              ; sprite attribute table address
-    ld      de, LOGO_ATTR_DATA      ; data address
+    ; Set sprite attribute table
+    ld      hl, 0x1b00              ; Sprite attribute table address
+    ld      de, LOGO_ATTR_DATA      ; Data address
 
     ld      b, 24
 BOOT_LOGO_1:
-    ld      a, (de)                 ; get attribute data
+    ld      a, (de)                 ; Get attribute data
     call    WRTVRM
     inc     de
     inc     hl
@@ -107,7 +107,7 @@ BOOT_LOGO_1:
 
 BOOT_LOGO_2:
     xor     a
-    ld      (JIFFY), a              ; jiffy reset
+    ld      (JIFFY), a              ; Jiffy reset
     
     ld      hl, LOGO_SE
     call    SOUNDDRV_BGMPLAY
@@ -115,15 +115,15 @@ BOOT_LOGO_2:
 BOOT_LOGO_3:
 ;    ld      a, (_REGION)
 ;    cp      1
-;    jr      z, BOOT_LOGO_4          ; skip when english
+;    jr      z, BOOT_LOGO_4          ; Skip when English
 
     ld      a, 7
     call    SNSMAT
     cp      0b10111111              ; SELECT key
-    jr      z, BOOT_SELECT_LANG     ; change language
+    jr      z, BOOT_SELECT_LANG     ; Change language
 
 BOOT_LOGO_4:
-    ld      a, (JIFFY)              ; jiffy load
+    ld      a, (JIFFY)              ; Load jiffy
     cp      0xf0                    ; 4 seconds
     jr      nz, BOOT_LOGO_3
 
@@ -133,9 +133,9 @@ BOOT_LOGO_4:
 
 
 BOOT_SELECT_LANG:
-    ; change color
+    ; Change color
     ld      a, 5
-    ld      hl, 0x1b00              ; sprite attribute table address
+    ld      hl, 0x1b00              ; Sprite attribute table address
     ld      de, 0x0003
     add     hl, de
     call    WRTVRM
@@ -148,7 +148,7 @@ BOOT_SELECT_LANG:
     call    WRTVRM
 
 BOOT_SELECT_LANG_0:
-    ; set pattern number from region code
+    ; Set pattern number from region code
     ld      hl, LANGUAGE_ATTR_DATA + 2
     ld      a, (_REGION)
     add     a, a
@@ -161,20 +161,20 @@ BOOT_SELECT_LANG_0:
     add     a, 4
     ld      (hl), a
 
-    ; set sprite attribute tablle
-    ld      hl, 0x1b00 + (4 * 6)    ; sprite attribute table address
+    ; Set sprite attribute table
+    ld      hl, 0x1b00 + (4 * 6)    ; Sprite attribute table address
     ld      de, LANGUAGE_ATTR_DATA
     ld      b, 8
 BOOT_SELECT_LANG_1:
-    ld      a, (de)                 ; get attribute data
+    ld      a, (de)                 ; Get attribute data
     call    WRTVRM
     inc     de
     inc     hl
     djnz    BOOT_SELECT_LANG_1
 
 BOOT_SELECT_LANG_2:
-    ; スペースキー入力があったら抜ける
-    xor     a                       ; keyboard
+    ; Exit if space key is pressed
+    xor     a                       ; Keyboard
     call    GTTRIG
     or      a
     jr      z, BOOT_SELECT_LANG_3
@@ -183,46 +183,46 @@ BOOT_SELECT_LANG_2:
     ret
 
 BOOT_SELECT_LANG_3:
-    ; カーソルキー入力までループ
-    xor     a                       ; keyboard
+    ; Loop until cursor key is pressed
+    xor     a                       ; Keyboard
     call    GTSTCK
 
-    ; 未入力 ?
+    ; No input?
     or      a
     jr      z, BOOT_SELECT_LANG_2
     
-    ; 右 ?
+    ; Right?
     cp      3
     jr      nz, BOOT_SELECT_LANG_4
 
-    ; 言語コード <> 2 ?
+    ; Language code <> 1?
     ld      a, (_REGION)
 ;    cp      2
     cp      1
     jr      z, BOOT_SELECT_LANG_4
 
-    ; 言語コード + 1
+    ; Language code + 1
     inc     a
     ld      (_REGION), a
     jr      BOOT_SELECT_LANG_5
 
 BOOT_SELECT_LANG_4:
-    ; 左 ?
+    ; Left?
     cp      7
     jr      nz, BOOT_SELECT_LANG_2
     
-    ; 言語コード <> 0 ?
+    ; Language code <> 0?
     ld      a, (_REGION)
     or      a
     jr      z, BOOT_SELECT_LANG_2
     
-    ; 言語コード - 1
+    ; Language code - 1
     dec     a
     ld      (_REGION), a
 
 BOOT_SELECT_LANG_5:
-    ; カーソルキー離すまでループ
-    xor     a                       ; keyboard
+    ; Loop until cursor key is released
+    xor     a                       ; Keyboard
     call    GTSTCK
     or      a
     jr      nz, BOOT_SELECT_LANG_5
