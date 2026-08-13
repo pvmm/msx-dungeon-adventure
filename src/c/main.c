@@ -20,81 +20,81 @@
 #include "./scene.c"
 
 
-// font.asmへの参照
+// Reference to font.asm
 //extern uint8_t FONT_COL_TBL[];
 extern uint8_t FONT_PTN_TBL_JP_EN[];
 extern uint8_t FONT_PTN_TBL_SP_PR[];
 
 extern uint8_t REGION;
 
-// プロンプトメッセージ
+// Prompt message
 uint8_t promptMessage[] = { 0x3E, 0x00 };
 
-// カーソル文字
+// Cursor character
 uint8_t cursor[] = {0x5f, 0x00};
 
-// ヘルプコマンド
+// Help command
 uint8_t helpCommand[] = {0x48, 0x45, 0x4C, 0x50, 0x00};
 
-// ブランク文字
+// Blank character
 uint8_t *blank = " ";
 
-// デバッグ用文字
+// Debug character
 uint8_t *debug = "*";
 
-// コマンド入力用バッファ
+// Command input buffer
 uint8_t input_buffer[32 - sizeof(promptMessage)];
 
-// キー入力バッファ
+// Key input buffer
 uint8_t key_buffer;
 
-// フラグ管理（ビット演算で扱う）
+// Flag management (handled with bitwise operations)
 uint16_t game_flags = 0;
 
-// 展開先ワークエリア
+// Expansion destination work area
 uint8_t temp[2048];
 
-// シーンデータへの参照
+// Reference to scene data
 Scene *scene;
 
-// 選択肢データ
+// Choice data
 Choice choice;
 
 
 void input_command()
 {
-    // RETURNキー入力フラグ
+    // RETURN key input flag
     bool_t enter_flg = false;
 
-    // 入力バッファインデックス
+    // Input buffer index
     uint8_t buffer_ix = 0;
 
-    // バッファクリア
+    // Clear buffer
     for (uint8_t i = 0; i < sizeof(input_buffer); i++) {
         input_buffer[i] = 0x00;
     }
     buffer_ix = 0;
 
-    // プロンプト表示
+    // Display prompt
     put_message_direct(0, PROMPT_LINE, promptMessage);
 
-    // キーバッファクリア
+    // Clear key buffer
     buffer_check();
 
-    // ループ開始
+    // Start loop
     while(enter_flg == false) {
-        // バッファ内容表示
+        // Display buffer contents
         put_message_direct(sizeof(promptMessage) - 1, PROMPT_LINE , input_buffer);
         put_message_direct(sizeof(promptMessage) + buffer_ix - 1, PROMPT_LINE , cursor);
 
-        // キーバッファクリア
+        // Clear key buffer
 //        msx_clearkey();
 
-        // キー入力を待つ
-//        key_buffer = getkeycode();    // TODO: ほんとはこっちにしたい(stdioを使わない)
+        // Wait for key input
+//        key_buffer = getkeycode();    // TODO: I'd really like to use this (without stdio)
         key_buffer = getkey();
 
-        // RETURNキーならループ終了
+        // If RETURN key, exit loop
         if (key_buffer == 0x0a) {
             if (buffer_ix > 0) {
                 enter_flg = true;
@@ -102,13 +102,13 @@ void input_command()
             continue;
         }
 /*
-        // ESCキーならバッファクリア
+        // If ESC key, clear buffer
         if (key_buffer == 0x1b) {
             clear_inputBuffer();
             continue;
         }
 */
-        // DELキーでバッファがあればバッファから1文字削除
+        // Delete one character from buffer with DEL key if buffer exists
         if (key_buffer == 0x08) {
             if (buffer_ix > 0) {
                 buffer_ix--;
@@ -118,17 +118,17 @@ void input_command()
             continue;
         }
 
-        // カーソルキーは無視する
+        // Ignore cursor keys
         if (key_buffer >= 0x1c && key_buffer <= 0x1f) {
             continue;
         }
 
-        // 小文字のアルファベットは大文字とする
+        // Convert lowercase letters to uppercase
         if (key_buffer >= 'a' && key_buffer <= 'z') {
             key_buffer -= 0x20;
         }
 
-        // それ以外ならバッファに追加（←ローマ字カナ入力をするときは、ここで変換処理を呼べばOK）
+        // Otherwise add to buffer (← When doing romaji-kana input, you can call conversion processing here)
         if (buffer_ix < 31 - sizeof(promptMessage)) {
             input_buffer[buffer_ix++] = key_buffer;
         }
@@ -138,7 +138,7 @@ void input_command()
 }
 
 
-// シーン列挙型からシーンの配列インデックスを取得
+// Get array index of scene from scene enumeration type
 uint8_t getSceneIdx(SceneId sceneId)
 {
     uint8_t idx = 0;
@@ -154,27 +154,27 @@ uint8_t getSceneIdx(SceneId sceneId)
 }
 
 
-// シーンの実行処理
+// Scene execution processing
 void run_scene(SceneId start_scene_id)
 {
-    // 現在のシーンの配列インデックス
+    // Array index of current scene
     uint8_t scene_idx = getSceneIdx(start_scene_id);
-    // 直前のシーンの配列インデックス
+    // Array index of previous scene
     uint8_t previous_scene_idx = 0xff;
-    // ループ終了判定フラグ
+    // Loop end determination flag
     bool_t end_flg = false;
-    // コマンド一致フラグ
+    // Command match flag
     bool_t matched = false;
 
     while (!end_flg) {
 
-        // 直前とシーンが変わっているか
+        // Check if scene has changed from before
         if (scene_idx != previous_scene_idx) {
 
-            // 変わっている場合は、シーンを変更する
+            // If changed, switch the scene
             scene = scenes[scene_idx];
 
-            // フラグによるシーン分岐のみ行う場合
+            // When only performing scene branching based on flags
             if (scene->flag_to_check) {
                 if (game_flags & scene->flag_to_check) {
                     scene_idx = getSceneIdx(scene->next_sceneId_if_set);
@@ -182,20 +182,20 @@ void run_scene(SceneId start_scene_id)
                     scene_idx = getSceneIdx(scene->next_sceneId_if_unset);
                 }
 
-            // 通常のシーンの場合
+            // In case of normal scenes
             } else {
-                // 直前のシーンIDを現在のシーンIDに置き換える
+                // Replace previous scene ID with current scene ID
                 previous_scene_idx = scene_idx;
 
                 if (scene->graphic_ptn0 != NULL) {
-                    // グラフィックデータが設定されている場合
-                    // ブロック1/2のカラーテーブル設定（ブランク）
+                    // When graphic data is set
+                    // Block 1/2 color table setting (blank)
                     for (uint16_t i = 0; i < 2048; i++) {
                         temp[i] = 0x00;
                     }
                     vdp_vwrite(temp, VRAM_COLOR_TBL1, VRAM_COLOR_TBL_SIZE);
                     vdp_vwrite(temp, VRAM_COLOR_TBL2, VRAM_COLOR_TBL_SIZE);
-                    // データを展開し表示する
+                    // Unpack and display data
                     switch_bank(scene->graphic_bank);
                     unpack(scene->graphic_ptn0, temp);
                     vdp_vwrite(temp, VRAM_PTN_GENR_TBL1, 0x04c0);
@@ -207,30 +207,30 @@ void run_scene(SceneId start_scene_id)
                     vdp_vwrite(temp, VRAM_COLOR_TBL2, 0x0390);
                 }
 
-                // メッセージを表示
+                // Display message
                 clear_message();
                 put_message(0, 17, scene->message);
 
                 if (scene->sceneId == OVER) {
-                    // ゲームオーバーの場合、処理を終了する
+                    // If game over, end processing
                     end_flg = true;
                 }
 
                 if (scene->next_sceneId_if_unset != NOSCENE) {
-                    // 次シーンの設定のみが行われている場合、キー入力を待ち、シーンを変更する
+                    // If only the next scene setting is done, wait for key input and change scenes
                     keywait();
                     scene_idx = getSceneIdx(scene->next_sceneId_if_unset);
                 }
             }
 
         } else {
-            // コマンド入力
+            // Command input
             input_command();
 
-            // メッセージ表示エリアクリア
+            // Clear message display area
             clear_message();
 
-            // コマンド一致フラグOFF
+            // Command match flag OFF
             matched = false;
 
             if ((strcmp(helpCommand, input_buffer) == 0) &&
@@ -247,37 +247,37 @@ void run_scene(SceneId start_scene_id)
 
                 while (choices[i] != NULL) {
 
-                    // シーンデータの選択肢データへの参照を取得
+                    // Get reference to choice data from scene data
                     choice = choices[i];
 
-                    // 選択肢データのコマンド未設定時はループ終了
+                    // If choice data command is not set, exit loop
                     if (choice.commands[0] == NULL) {
                         break;
                     } 
 
-                    // すべてのコマンド候補に対して比較
+                    // Compare against all command candidates
                     for (int j = 0; choice.commands[j] != NULL; j++) {
 
-                        // 選択肢データのコマンド＝入力コマンド and
-                        // 条件フラグ＝設定なし or 条件フラグの対象＝ON の場合
+                        // Choice data command = input command AND
+                        // Condition flag = not set OR condition flag target = ON
                         if ((strcmp(choice.commands[j], input_buffer) == 0) &&
                             ((choice.required_flag == 0) || (game_flags & choice.required_flag))) {
 
-                            // コマンド一致フラグON
+                            // Command match flag ON
                             matched = true;
 
-                            // 選択肢データのチェック対象フラグ＝設定あり and
-                            // チェック対象フラグ＝ON の場合
+                            // Check target flag in choice data = set AND
+                            // Check target flag = ON
                             if ((choice.flag_to_check) && (game_flags & choice.flag_to_check)) {
-                                // メッセージ表示
+                                // Display message
                                 if (choice.message_if_set != NULL) {
                                     put_message(0, 17, choice.message_if_set);
                                 }
-                                // フラグセット
+                                // Set flag
                                 if (choice.set_flag_if_set) {
                                     game_flags |= choice.set_flag_if_set;
                                 }
-                                // シーン遷移
+                                // Scene transition
                                 if (choice.next_sceneId_if_set) {
                                     if (choice.message_if_set != NULL) {
                                         keywait();
@@ -285,17 +285,17 @@ void run_scene(SceneId start_scene_id)
                                     scene_idx = getSceneIdx(choice.next_sceneId_if_set);
                                 }
 
-                            // 上記以外の場合
+                            // Otherwise
                             } else {
-                                // メッセージ表示
+                                // Display message
                                 if (choice.message_if_unset != NULL) {
                                     put_message(0, 17, choice.message_if_unset);
                                 }
-                                // フラグセット
+                                // Set flag
                                 if (choice.set_flag_if_unset) {
                                     game_flags |= choice.set_flag_if_unset;
                                 }
-                                // シーン遷移
+                                // Scene transition
                                 if (choice.next_sceneId_if_unset) {
                                     if (choice.message_if_unset != NULL) {
                                         keywait();
@@ -317,9 +317,9 @@ void run_scene(SceneId start_scene_id)
                 
             }
 
-            // コマンドがマッチしたか
+            // Did command match?
             if (!matched) {
-                // コマンドがマッチしなかった場合は、固定のメッセージを表示する
+                // If command did not match, display a fixed message
                 put_message(0, 17, DONTMESSAGE);
             }
         }
@@ -329,26 +329,26 @@ void run_scene(SceneId start_scene_id)
 
 void init()
 {
-    // 言語判定
+    // Language detection
     check_region();
 
-    // パレット変更
+    // Change palette
     set_palette();
 
-    // サウンドドライバー初期化
+    // Sound driver initialization
     sounddrv_init();
 
-    // ロゴ表示
+    // Display logo
     boot_logo();
 
-    // キークリックスイッチOFF
+    // Key click switch OFF
     *(uint8_t *)MSX_CLIKSW = 0;
 
-    // キーのオートリピート開始までの時間間隔
-    // C-BIOSでは初期値1のため、明示的に設定（でもすぐ上書きされて変更できない）
+    // Time interval before key auto-repeat starts
+    // C-BIOS initial value is 1, so explicitly set (but will be overwritten immediately and cannot be changed)
     *(uint8_t *)MSX_REPCNT = 50;
 
-    // ブロック3のパターンジェネレータテーブル設定（フォントパターン）
+    // Block 3 pattern generator table setting (font pattern)
     switch_bank(1);
     if (REGION == 0 || REGION == 1) {
         unpack(FONT_PTN_TBL_JP_EN, temp);
@@ -357,13 +357,13 @@ void init()
     }
     vdp_vwrite(temp, VRAM_PTN_GENR_TBL3, VRAM_PTN_GENR_TBL_SIZE);
 
-    // ブロック3のカラーテーブル設定（フォントパターン）
+    // Block 3 color table setting (font pattern)
     for (uint16_t i = 0; i < 0x0800; i++) {
         temp[i] = 0xf0;
     }
     vdp_vwrite(temp, VRAM_COLOR_TBL3, VRAM_PTN_GENR_TBL_SIZE);
 
-    // パターンネームテーブル初期化
+    // Pattern name table initialization
     uint8_t code = 0;
     for (uint16_t i = 0; i < 256; i++) {
         temp[i] = 254;
@@ -373,9 +373,9 @@ void init()
             temp[i * 32 + j + 6] = code++;
         }
     }
-    // ブロック1
+    // Block 1
     vdp_vwrite(temp, VRAM_PTN_NAME_TBL1, 0x100);
-    // ブロック2
+    // Block 2
     vdp_vwrite(temp, VRAM_PTN_NAME_TBL2, 0x100);
 }
 
@@ -384,10 +384,10 @@ void main()
     init();
 
     while (0 == 0) {
-        // フラグ初期化
+        // Flag initialization
         game_flags = 0;
 
-        // ゲームスタート
+        // Game start
         run_scene(TITLE);
     }
 }
