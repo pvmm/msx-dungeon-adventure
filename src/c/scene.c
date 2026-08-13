@@ -3,28 +3,28 @@
 
 #include "../include/resource.h"
 
-// シーン数
+// Number of scenes
 #define SCENE_NUM 23
 
-// フラグ定義
-#define FLAG_FOUND_KEY      0b0000000000000001    // 鍵を見つけた
-#define FLAG_HAVE_KEY       0b0000000000000010    // 鍵を手に入れた
-#define FLAG_OPEN_DOOR      0b0000000000000100    // ドアを開けた
-#define FLAG_FAIL_APPLE     0b0000000000001000    // リンゴが落ちた
-#define FLAG_HAVE_APPLE     0b0000000000010000    // リンゴを手に入れた
-#define FLAG_LOOK_SNAKE     0b0000000000100000    // ヘビを見た
-#define FLAG_KILL_SNAKE     0b0000000001000000    // ヘビを倒した
-#define FLAG_HAVE_SWORD     0b0000000010000000    // 剣を取った
-#define FLAG_PULL_SWORD     0b0000000100000000    // 剣を抜こうとした
-#define FLAG_BROKEN_SWORD   0b0000001000000000    // 剣を折った
-#define FLAG_LOOK_SKELETON  0b0000010000000000    // スケルトンを倒した
-#define FLAG_KILL_SKELETON  0b0000100000000000    // スケルトンを倒した
-#define FLAG_HAVE_SKARF     0b0001000000000000    // スカーフを手に入れた
-#define FLAG_EQUIP_SWORD    0b0010000000000000    // 剣を構えた
-#define FLAG_POLISH_PILLER  0b0100000000000000    // 柱を拭いた
+// Flag definitions
+#define FLAG_FOUND_KEY      0b0000000000000001    // Found key
+#define FLAG_HAVE_KEY       0b0000000000000010    // Obtained key
+#define FLAG_OPEN_DOOR      0b0000000000000100    // Opened door
+#define FLAG_FAIL_APPLE     0b0000000000001000    // Apple fell
+#define FLAG_HAVE_APPLE     0b0000000000010000    // Obtained apple
+#define FLAG_LOOK_SNAKE     0b0000000000100000    // Saw snake
+#define FLAG_KILL_SNAKE     0b0000000001000000    // Defeated snake
+#define FLAG_HAVE_SWORD     0b0000000010000000    // Obtained sword
+#define FLAG_PULL_SWORD     0b0000000100000000    // Attempted to draw sword
+#define FLAG_BROKEN_SWORD   0b0000001000000000    // Broke sword
+#define FLAG_LOOK_SKELETON  0b0000010000000000    // Saw skeleton
+#define FLAG_KILL_SKELETON  0b0000100000000000    // Defeated skeleton
+#define FLAG_HAVE_SKARF     0b0001000000000000    // Obtained scarf
+#define FLAG_EQUIP_SWORD    0b0010000000000000    // Equipped sword
+#define FLAG_POLISH_PILLER  0b0100000000000000    // Polished pillar
 
 
-// シーンIDの列挙型
+// Scene ID enumeration
 typedef enum {
     NOSCENE,
     TITLE,
@@ -53,37 +53,37 @@ typedef enum {
 } SceneId;
 
 
-// 選択肢定義
+// Choice definition
 typedef struct {
-    uint16_t required_flag;         // この選択肢が表示・実行できる条件(0で条件なし)
-    const char *commands[5];        // プレイヤーの入力コマンド(1選択肢につき最大5コマンド)
-    uint16_t flag_to_check;         // メッセージの分岐に使うフラグ(0で分岐なし)
-    uint8_t *message_if_unset;      // フラグが未設定のときの表示メッセージ
-    uint16_t set_flag_if_unset;     // 実行後にセットするフラグ(フラグ未設定時)
-    SceneId next_sceneId_if_unset;  // 次のシーン名(空で遷移なし)
-    uint8_t *message_if_set;        // フラグが設定済のときの表示メッセージ
-    uint16_t set_flag_if_set;       // 実行後にセットするフラグ(フラグ設定時)
-    SceneId next_sceneId_if_set;    // 次のシーン名(空で遷移なし)
+    uint16_t required_flag;         // Condition for this choice to be displayed/executed (0 = no condition)
+    const char *commands[5];        // Player input command (up to 5 commands per choice)
+    uint16_t flag_to_check;         // Flag used for message branching (0 = no branching)
+    uint8_t *message_if_unset;      // Message to display when flag is not set
+    uint16_t set_flag_if_unset;     // Flag to set after execution (when flag is unset)
+    SceneId next_sceneId_if_unset;  // Next scene (empty = no transition)
+    uint8_t *message_if_set;        // Message to display when flag is set
+    uint16_t set_flag_if_set;       // Flag to set after execution (when flag is set)
+    SceneId next_sceneId_if_set;    // Next scene (empty = no transition)
 } Choice;
 
 
-// シーン定義
+// Scene definition
 typedef struct {
-    SceneId sceneId;                // シーンID
-    uint16_t flag_to_check;         // シーンの分岐に使うフラグ(0で分岐なし)
-    SceneId next_sceneId_if_unset;  // フラグが未設定のときのシーンID
-    SceneId next_sceneId_if_set;    // フラグが設定済のときのシーンID
-    uint8_t graphic_bank;           // グラフィックデータのバンク
-    uint8_t *graphic_ptn0;          // グラフィックデータ(パターンジェネレータテーブル PAGE0)
-    uint8_t *graphic_ptn1;          // グラフィックデータ(パターンジェネレータテーブル PAGE1)
-    uint8_t *graphic_col0;          // グラフィックデータ(カラーテーブル PAGE0)
-    uint8_t *graphic_col1;          // グラフィックデータ(カラーテーブル PAGE1)
-    uint8_t *message;               // シーンの最初に表示するメッセージ
+    SceneId sceneId;                // Scene ID
+    uint16_t flag_to_check;         // Flag used for scene branching (0 = no branching)
+    SceneId next_sceneId_if_unset;  // Scene ID when flag is not set
+    SceneId next_sceneId_if_set;    // Scene ID when flag is set
+    uint8_t graphic_bank;           // Graphics data bank
+    uint8_t *graphic_ptn0;          // Graphics data (pattern generator table PAGE0)
+    uint8_t *graphic_ptn1;          // Graphics data (pattern generator table PAGE1)
+    uint8_t *graphic_col0;          // Graphics data (color table PAGE0)
+    uint8_t *graphic_col1;          // Graphics data (color table PAGE1)
+    uint8_t *message;               // Message to display at the start of the scene
     uint8_t *choices;
 } Scene;
 
 
-// シーンデータ
+// Scene data
 Choice choicesNull[1] = {
     {   
         .required_flag          = 0,
@@ -1271,7 +1271,7 @@ Scene scene070 = {
 };
 
 
-// シーンデータへの参照配列
+// Array of references to scene data
 Scene *scenes[SCENE_NUM] = {
     sceneTitle,
     sceneOver,
